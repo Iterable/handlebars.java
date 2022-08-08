@@ -229,7 +229,7 @@
 
   <properties>
     <antlr-version>4.9.2</antlr-version>
-    <nashorn.version>15.3</nashorn.version>
+    <nashorn.version>15.4</nashorn.version>
   </properties>
 
   <profiles>
