@@ -26,13 +26,11 @@ import org.apache.commons.text.WordUtils;
 
 import java.io.IOException;
 import java.math.RoundingMode;
+import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.time.temporal.TemporalAccessor;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -520,7 +518,7 @@ public enum StringHelpers implements Helper<Object> {
    * <li>"long": long date format. For example: June 19, 2012</li>
    * <li>"medium": medium date format. For example: Jun 19, 2012</li>
    * <li>"short": short date format. For example: 6/19/12</li>
-   * <li>"pattern": a {@link java.time.format.DateTimeFormatter} pattern.</li>
+   * <li>"pattern": a date pattern.</li>
    * </ul>
    * Otherwise, the default formatter will be used.
    * The format option can be specified as a parameter or hash (a.k.a named parameter).
@@ -543,80 +541,41 @@ public enum StringHelpers implements Helper<Object> {
    */
   dateFormat {
     /**
-     * The default format styles.
+     * The default date styles.
      */
-    private final Map<String, FormatStyle> formatStyles = new HashMap<String, FormatStyle>(4) {
+    @SuppressWarnings("serial")
+    private Map<String, Integer> styles = new HashMap<String, Integer>() {
       {
-        put("full", FormatStyle.FULL);
-        put("long", FormatStyle.LONG);
-        put("medium", FormatStyle.MEDIUM);
-        put("short", FormatStyle.SHORT);
+        put("full", DateFormat.FULL);
+        put("long", DateFormat.LONG);
+        put("medium", DateFormat.MEDIUM);
+        put("short", DateFormat.SHORT);
       }
     };
 
-    private TemporalAccessor toTemporalAccessor(final Object value) {
-      if (value instanceof TemporalAccessor) {
-        return (TemporalAccessor) value;
-      } else if (value instanceof Date) {
-        return ((Date) value).toInstant();
-      } else {
-        String className = null;
-        if (value != null) {
-          className = value.getClass().getSimpleName();
-        }
-        throw new IllegalArgumentException(String.format(
-            "found instance of %s with value '%s', but expected instance of TemporalAccessor",
-            className, value));
-      }
-    }
-
     @Override
     protected CharSequence safeApply(final Object value, final Options options) {
-      TemporalAccessor date = toTemporalAccessor(value);
-
-      String pattern = options.param(0, options.hash("format", "medium"));
-      FormatStyle dateStyle = formatStyles.get(pattern);
-      FormatStyle timeStyle = formatStyles.get(options.hash("time"));
-
-      DateTimeFormatter formatter;
-      if (dateStyle == null) {
-        formatter = DateTimeFormatter.ofPattern(pattern);
+      isTrue(value instanceof Date, "found '%s', expected 'date'", value);
+      Date date = (Date) value;
+      final DateFormat dateFormat;
+      Object pattern = options.param(0, options.hash("format", "medium"));
+      String localeStr = options.param(1, options.hash("locale", Locale.getDefault().toString()));
+      Locale locale = LocaleUtils.toLocale(localeStr);
+      Integer style = styles.get(pattern);
+      if (style == null) {
+        dateFormat = new SimpleDateFormat(pattern.toString(), locale);
       } else {
-        if (timeStyle != null) {
-          formatter = DateTimeFormatter.ofLocalizedDateTime(dateStyle, timeStyle);
-        } else {
-          formatter = DateTimeFormatter.ofLocalizedDate(dateStyle);
-        }
+        dateFormat = DateFormat.getDateInstance(style, locale);
       }
-
-      // configure locale
-      String localeStr = options.param(1, options.hash("locale"));
-      Locale locale;
-      if (localeStr != null && localeStr.length() > 0) {
-        locale = LocaleUtils.toLocale(localeStr);
-      } else {
-        locale = Locale.getDefault();
-      }
-      formatter = formatter.withLocale(locale);
-
-      // configure timezone
       Object tz = options.hash("tz");
       if (tz != null) {
-        ZoneId zoneId;
-        if (tz instanceof ZoneId) {
-          zoneId = (ZoneId) tz;
-        } else if (tz instanceof TimeZone) {
-          zoneId = ((TimeZone) tz).toZoneId();
-        } else {
-          zoneId = TimeZone.getTimeZone(tz.toString()).toZoneId();
-        }
-        formatter = formatter.withZone(zoneId);
-      } else {
-        formatter = formatter.withZone(ZoneId.systemDefault());
+        final TimeZone timeZone = tz instanceof TimeZone ? (TimeZone) tz : TimeZone.getTimeZone(tz
+            .toString());
+        dateFormat.setTimeZone(timeZone);
       }
-
-      return formatter.format(date);
+      return dateFormat.format(date);
     }
+
   },
 
   /**
