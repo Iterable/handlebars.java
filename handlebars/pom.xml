@@ -242,6 +242,7 @@
 
   <properties>
     <antlr-version>4.7.1</antlr-version>
+    <nashorn.version>15.3</nashorn.version>
   </properties>
 
   <profiles>
@@ -317,6 +318,19 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>nashorn17</id>
+      <activation>
+        <jdk>17</jdk>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.openjdk.nashorn</groupId>
+          <artifactId>nashorn-core</artifactId>
+          <version>${nashorn.version}</version>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
 </project>
