@@ -7,11 +7,16 @@ import static org.junit.Assume.assumeTrue;
 import static org.junit.Assert.assertSame;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import org.junit.Test;
 
+import com.github.jknack.handlebars.Context;
+import com.github.jknack.handlebars.Handlebars;
 import com.github.jknack.handlebars.ValueResolver;
 
 public class SetAccessibleValueResolverTest {
@@ -48,6 +53,23 @@ public class SetAccessibleValueResolverTest {
     Object result = new FieldValueResolver().resolve(new HashMap<>(), "missing");
 
     assertSame(ValueResolver.UNRESOLVED, result);
+  }
+
+  @Test
+  public void privateJdkFieldsAreNotResolved() {
+    List<String> groups = new ArrayList<String>(Arrays.asList("a", "b"));
+
+    assertSame(ValueResolver.UNRESOLVED, new FieldValueResolver().resolve(groups, "size"));
+  }
+
+  @Test
+  public void collectionSizeFallsThroughToPublicMethod() throws Exception {
+    List<String> groups = new ArrayList<String>(Arrays.asList("a", "b"));
+    Context context = Context.newBuilder(groups)
+        .resolver(FieldValueResolver.INSTANCE, MethodValueResolver.INSTANCE)
+        .build();
+
+    assertEquals("2", new Handlebars().compileInline("{{this.size}}").apply(context));
   }
 
   static int getJavaVersion() {

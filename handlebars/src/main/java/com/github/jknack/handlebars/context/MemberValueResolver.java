@@ -80,6 +80,11 @@ public abstract class MemberValueResolver<M extends Member> implements ValueReso
         // Mark as accessible.
         if (isUseSetAccessible(m) && m instanceof AccessibleObject) {
           ((AccessibleObject) m).setAccessible(true);
+        } else if (!isPublic(m)) {
+          // JDK 9+ modules: skip members we cannot open. Otherwise a private
+          // field such as ArrayList.size is cached and invokeMember throws,
+          // blocking MethodValueResolver from using the public size() method.
+          continue;
         }
         mcache.put(memberName(m), m);
       }
