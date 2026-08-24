@@ -99,6 +99,15 @@ public class DateFormatTest extends AbstractTest {
     shouldCompileTo("{{dateFormat this \"short\" \"fr\"}}", date, expected);
   }
 
+  @Test
+  public void namedLocale() throws IOException {
+    Date date = date(19, 6, 2012);
+    String expected =
+        DateFormat.getDateInstance(DateFormat.FULL, Locale.KOREAN)
+            .format(date);
+    shouldCompileTo("{{dateFormat this format=\"full\" locale=\"ko\"}}", date, expected);
+  }
+
   public static Date date(final int day, final int month, final int year) {
     Calendar calendar = Calendar.getInstance();
     calendar.set(Calendar.DATE, day);
